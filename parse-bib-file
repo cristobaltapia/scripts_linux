@@ -1,0 +1,78 @@
+#!/usr/bin/env python
+import argparse
+import sys
+
+import bibtexparser
+from bibtexparser.bparser import BibTexParser
+
+
+def print_authors(au: str):
+    authors = au.split("and")
+    lastnames = []
+    # Get lastname
+    for ai in authors:
+        if "," in ai:
+             lastnames.append(ai.strip().split(",")[0])
+        else:
+             lastnames.append(ai.strip().split(" ")[-1])
+
+    lastnames = [f"author:{ai}" for ai in lastnames]
+    query = " OR ".join(lastnames)
+    print(f"{query}")
+
+
+def print_all(year, author, title):
+    au = "Author(s):"
+    ti = "Title:"
+    ye = "Year:"
+    print(
+        f" <tt><b>{au:<11}</b></tt> {author}\n"
+        + f" <tt><b>{ti:<11}</b></tt> {title}\n"
+        + f" <tt><b>{ye:<11}</b></tt> {year}"
+    )
+
+
+if __name__ == "__main__":
+    #  bib = sys.stdin.read()
+
+    pars = argparse.ArgumentParser(description="Parse a bibfile")
+    pars.add_argument(
+        "bibfile",
+        type=str,
+        nargs="?",
+        help="Bibfile to be parsed",
+        default=sys.stdin.read(),
+    )
+    pars.add_argument(
+        "--author",
+        help="Return author corresponding to bibkey",
+        action="store_const",
+        const=True,
+        default=False,
+    )
+    pars.add_argument(
+        "--all",
+        help="Return relevant fields",
+        action="store_const",
+        const=True,
+        default=False,
+    )
+
+    argumetns = pars.parse_args()
+    bib = argumetns.bibfile
+
+    parser = BibTexParser()
+    parser.ignore_nonstandard_types = False
+
+    bib_db = bibtexparser.loads(bib, parser)
+
+    # Get the relevant information
+    title = bib_db.entries[0]["title"]
+    author = bib_db.entries[0]["author"]
+    year = bib_db.entries[0]["year"]
+    key = bib_db.entries[0]["ID"]
+    if argumetns.all:
+        print_all(year, author, title)
+    elif argumetns.author:
+        print_authors(author)
+
