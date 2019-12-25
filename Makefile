@@ -1,10 +1,18 @@
 .PHONY: install
 .PHONY: uninstall
 
+INSTALL_DIR=~/.local/bin
+
 install:
-	cp ./wofi_pubs.sh ~/.local/bin/wofi_pubs.sh
-	chmod +x ~/.local/bin/wofi_pubs.sh
+	cp ./wofi-pubs.sh $(INSTALL_DIR)/wofi-pubs.sh
+	cp ./parse-bib-file $(INSTALL_DIR)/parse-bib-file
+	cp ./wofi-papis.sh $(INSTALL_DIR)/wofi-papis.sh
+	chmod +x $(INSTALL_DIR)/wofi-pubs.sh
+	chmod +x $(INSTALL_DIR)/parse-bib-file
+	chmod +x $(INSTALL_DIR)/wofi-papis.sh
 
 uninstall:
-	rm ~/.local/bin/wofi_pubs.sh
+	rm $(INSTALL_DIR)/wofi-pubs.sh
+	rm $(INSTALL_DIR)/parse-bib-file
+	rm $(INSTALL_DIR)/wofi-papis.sh
 

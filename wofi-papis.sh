@@ -6,13 +6,14 @@ WOFI=wofi
 PAPIS=papis
 CACHE=~/.local/tmp/papis_wofi
 CACHE_AUTH=~/.local/tmp/papis_wofi_auth
+SHOW_FORMAT='{doc[ref]} <i>{doc[author]}</i> <b>"{doc[title]}"</b>'
 
 # List all the publications
 function list_publications() {
 	${PAPIS} \
         list \
         --all \
-        --format '{doc[ref]} <i>{doc[author]}</i> - <b>"{doc[title]}"</b>' \
+        --format "${SHOW_FORMAT}" \
         'ref:*' | \
         awk \
         '{
@@ -26,7 +27,7 @@ function list_publications_auth() {
 	${PAPIS} \
         list \
         --all \
-        --format '{doc[ref]} <i>{doc[author]}</i> - <b>"{doc[title]}"</b>' \
+        --format "${SHOW_FORMAT}" \
         "$1" | \
         awk \
         '{
