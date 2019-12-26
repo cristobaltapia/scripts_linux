@@ -8,43 +8,48 @@ CACHE=~/.local/tmp/papis_wofi
 CACHE_AUTH=~/.local/tmp/papis_wofi_auth
 CACHE_LIBS=~/.local/tmp/papis_wofi_libs
 SHOW_FORMAT='{doc[ref]} <i>{doc[author]}</i> – <b>"{doc[title]}"</b>'
+TERMINAL_EDIT=termite
+# Get default library
+# DEFAULT_LIB=$(${PAPIS} config default-library)
+DEFAULT_LIB=papers
 
 # List all the publications
 function list_publications() {
     # If an argument is passed, it is used to change to another existing
     # library
     echo " <b>Change library</b>"
+    local library
     if [[ -z $1 ]]; then
-        ${PAPIS} \
-            list \
-            --all \
-            --format "${SHOW_FORMAT}" \
-            'ref:*' | \
-            awk \
-            '{
-                gsub(/&/, "&amp;");
-                key=$1; $1="";
-                printf "<tt><b> %-18s</b></tt>  %s\n", key, $0
-            }'
+        library=${DEFAULT_LIB}
     else
-        ${PAPIS} \
-            --lib $1 \
-            list \
-            --all \
-            --format "${SHOW_FORMAT}" \
-            'ref:*' | \
-            awk \
-            '{
-                gsub(/&/, "&amp;");
-                key=$1; $1="";
-                printf "<tt><b> %-18s</b></tt>  %s\n", key, $0
-            }'
+        library=$1
     fi
+
+    ${PAPIS} \
+        --lib ${library} \
+        list \
+        --all \
+        --format "${SHOW_FORMAT}" \
+         | \
+        awk \
+        '{
+            gsub(/&/, "&amp;");
+            key=$1; $1="";
+            printf "<tt><b> %-18s</b></tt>  %s\n", key, $0
+        }'
 }
 
 # The passed argument '$1' is a query string, e.g.: 'author:Einstein'
 function list_publications_auth() {
+    local library
+    if [[ -z $2 ]]; then
+        library=${DEFAULT_LIB}
+    else
+        library=$2
+    fi
+
 	${PAPIS} \
+        --lib ${library}
         list \
         --all \
         --format "${SHOW_FORMAT}" \
@@ -118,13 +123,16 @@ function menu_ref() {
     IFS=$'\n'
     # Analyze bibfile information
     bibkey=$1
-    library=$2
 
-    if [[ -z ${library} ]]; then
-        eval $(${PAPIS} export --format yaml "ref:${bibkey}" | parse_yaml)
+    local library
+    if [[ -z $2 ]]; then
+        library=${DEFAULT_LIB}
     else
-        eval $(${PAPIS} --lib $2 export --format yaml "ref:${bibkey}" | parse_yaml)
+        library=$2
     fi
+
+    eval $(${PAPIS} --lib ${library} export --format yaml "ref:${bibkey}" | parse_yaml)
+
     declare -a bibinfo=( \
         $(printf " <tt><b>%-11s</b></tt>%s" "Author:" ${author}) \
         $(printf " <tt><b>%-11s</b></tt>%s" "Title:" ${title}) \
@@ -165,25 +173,12 @@ function menu_ref() {
 
     case $selected in
       'export')
-          if [[ -z ${library} ]]; then
-              ${PAPIS} export --format bibtex "ref:${bibkey}" | wl-copy
-          else
-              ${PAPIS} --lib $library export --format bibtex "ref:${bibkey}" | wl-copy
-          fi
-          ;;
+          ${PAPIS} --lib ${library} export --format bibtex "ref:${bibkey}" | wl-copy;;
       'open')
-          if [[ -z ${library} ]]; then
-              ${PAPIS} open --tool ${PDFVIEWER} "ref:${bibkey}"
-          else
-              ${PAPIS} --lib ${library} open --tool ${PDFVIEWER} "ref:${bibkey}"
-          fi
-          ;;
+          ${PAPIS} --lib ${library} open --tool ${PDFVIEWER} "ref:${bibkey}";;
       'edit')
-          if [[ -z ${library} ]]; then
-              ${PAPIS} edit -e nvim-gtk "ref:${bibkey}"
-          else
-              ${PAPIS} --lib ${library} edit -e nvim-gtk "ref:${bibkey}"
-          fi;;
+          ${TERMINAL_EDIT} -t "Papis edit" \
+              --exec="${PAPIS} --lib ${library} edit 'ref:${bibkey}'";;
       'from same author(s)')
           menu_same_authors ${bibkey} ${library};;
       'back')
@@ -191,12 +186,23 @@ function menu_ref() {
     esac
 }
 
+# Get references from the same authors as the given reference
+# $1 : bibkey
+# $2 : library
 function menu_same_authors() {
     prompt='Same authors...'
     bibkey=$1
-    query_auth=$(${PAPIS} export --format bibtex "ref:${bibkey}" | ~/.local/bin/parse-bib-file --author)
 
-    PUBKEY=$(list_publications_auth ${query_auth} | ${WOFI} \
+    local library
+    if [[ -z $2 ]]; then
+        library=${DEFAULT_LIB}
+    else
+        library=$2
+    fi
+
+    query_auth=$(${PAPIS} --lib ${library} export --format bibtex "ref:${bibkey}" | ~/.local/bin/parse-bib-file --author)
+
+    PUBKEY=$(list_publications_auth ${query_auth} ${library} | ${WOFI} \
         --insensitive \
         --allow-markup \
         --width 1200 \
@@ -215,14 +221,15 @@ function menu_same_authors() {
         exit 1
     fi
 
-    menu_ref ${bibkey}
-
+    menu_ref ${bibkey} ${library}
 }
 
 function menu_library() {
     prompt='Choose library...'
     # Get libraries
-    selected=$(${PAPIS} list --libraries | ${WOFI} \
+    selected=$(${PAPIS} list --libraries | \
+         awk 'BEGIN {FS=" "} {printf "<tt><b>%-16s</b></tt>%s\n", $1, $2}' \
+         | ${WOFI} \
         --insensitive \
         --allow-markup \
         --width 800 \
@@ -232,10 +239,8 @@ function menu_library() {
         --cache-file ${CACHE_LIBS}
     )
 
-    rm ${CACHE_LIBS}
-
     # Store bibkey of the selected reference
-    library=$(echo ${selected} | awk '{print $1}')
+    library=$(echo ${selected} | awk '{gsub(/<[^>]*>/, ""); print $1}')
 
     # Exit script if no selection is made
     if [[ ${library} == "" ]]; then
@@ -243,7 +248,6 @@ function menu_library() {
     fi
 
     main_fun ${library}
-
 }
 
 # Call the main function
