@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 # Search through your papis database and open file
+#
+# This only works with the option 'database-backend = whoosh'
+# of the papis configuration file
 
 PDFVIEWER=zathura
 WOFI=wofi
@@ -30,7 +33,7 @@ function list_publications() {
         list \
         --all \
         --format "${SHOW_FORMAT}" \
-         | \
+        '*' | \
         awk \
         '{
             gsub(/&/, "&amp;");
@@ -49,7 +52,7 @@ function list_publications_auth() {
     fi
 
 	${PAPIS} \
-        --lib ${library}
+        --lib ${library} \
         list \
         --all \
         --format "${SHOW_FORMAT}" \
@@ -105,7 +108,7 @@ function main_fun() {
     fi
 
     # Store bibkey of the selected reference
-    bibkey=$(echo ${PUBKEY} | awk '{sub(/\[/, " "); sub(/\]/, " "); printf $2}')
+    bibkey=$(echo ${PUBKEY} | awk '{printf $2}')
 
     # Exit script if no selection is made
     if [[ ${bibkey} == "" ]]; then
