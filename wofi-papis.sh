@@ -6,23 +6,43 @@ WOFI=wofi
 PAPIS=papis
 CACHE=~/.local/tmp/papis_wofi
 CACHE_AUTH=~/.local/tmp/papis_wofi_auth
-SHOW_FORMAT='{doc[ref]} <i>{doc[author]}</i> <b>"{doc[title]}"</b>'
+CACHE_LIBS=~/.local/tmp/papis_wofi_libs
+SHOW_FORMAT='{doc[ref]} <i>{doc[author]}</i> – <b>"{doc[title]}"</b>'
 
 # List all the publications
 function list_publications() {
-	${PAPIS} \
-        list \
-        --all \
-        --format "${SHOW_FORMAT}" \
-        'ref:*' | \
-        awk \
-        '{
-            gsub(/&/, "&amp;");
-            key=$1; $1="";
-            printf "<tt><b> %-18s</b></tt>  %s\n", key, $0
-        }'
+    # If an argument is passed, it is used to change to another existing
+    # library
+    echo " <b>Change library</b>"
+    if [[ -z $1 ]]; then
+        ${PAPIS} \
+            list \
+            --all \
+            --format "${SHOW_FORMAT}" \
+            'ref:*' | \
+            awk \
+            '{
+                gsub(/&/, "&amp;");
+                key=$1; $1="";
+                printf "<tt><b> %-18s</b></tt>  %s\n", key, $0
+            }'
+    else
+        ${PAPIS} \
+            --lib $1 \
+            list \
+            --all \
+            --format "${SHOW_FORMAT}" \
+            'ref:*' | \
+            awk \
+            '{
+                gsub(/&/, "&amp;");
+                key=$1; $1="";
+                printf "<tt><b> %-18s</b></tt>  %s\n", key, $0
+            }'
+    fi
 }
 
+# The passed argument '$1' is a query string, e.g.: 'author:Einstein'
 function list_publications_auth() {
 	${PAPIS} \
         list \
@@ -37,9 +57,29 @@ function list_publications_auth() {
         }'
 }
 
+# Parse a yaml file
+# Function taken from Stefan Farestam (https://stackoverflow.com/a/21189044)
+function parse_yaml {
+    local prefix=$2
+    local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+    sed -ne "s|^\($s\):|\1|" \
+         -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
+         -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+    awk -F$fs '{
+       indent = length($1)/2;
+       vname[indent] = $2;
+       for (i in vname) {if (i > indent) {delete vname[i]}}
+       if (length($3) > 0) {
+          vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+          printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
+       }
+    }'
+}
+
 function main_fun() {
     prompt='search for publication...'
-    PUBKEY=$(list_publications | ${WOFI} \
+
+    PUBKEY=$(list_publications $1 | ${WOFI} \
         --insensitive \
         --allow-markup \
         --width 1200 \
@@ -47,6 +87,17 @@ function main_fun() {
         --prompt="${prompt}" \
         --dmenu \
         --cache-file ${CACHE})
+
+    rm ${CACHE}
+
+    # Remove XML tags
+    PUBKEY=$(echo ${PUBKEY} | awk '{gsub(/<[^>]*>/, ""); print $0}')
+
+    # Change library
+    if [[ ${PUBKEY} == " Change library" ]]; then
+        menu_library
+        exit 1
+    fi
 
     # Store bibkey of the selected reference
     bibkey=$(echo ${PUBKEY} | awk '{sub(/\[/, " "); sub(/\]/, " "); printf $2}')
@@ -56,15 +107,29 @@ function main_fun() {
         exit 1
     fi
 
-    menu_ref ${bibkey}
-
+    # The second argument is the library
+    menu_ref ${bibkey} $1
 }
 
+# Menu to display actions and information of selected reference
+# $1 : bibkey
+# $2 : library
 function menu_ref() {
     IFS=$'\n'
     # Analyze bibfile information
     bibkey=$1
-    declare -a bibinfo=$(${PAPIS} export --format bibtex "ref:${bibkey}" | ~/.local/bin/parse-bib-file --all)
+    library=$2
+
+    if [[ -z ${library} ]]; then
+        eval $(${PAPIS} export --format yaml "ref:${bibkey}" | parse_yaml)
+    else
+        eval $(${PAPIS} --lib $2 export --format yaml "ref:${bibkey}" | parse_yaml)
+    fi
+    declare -a bibinfo=( \
+        $(printf " <tt><b>%-11s</b></tt>%s" "Author:" ${author}) \
+        $(printf " <tt><b>%-11s</b></tt>%s" "Title:" ${title}) \
+        $(printf " <tt><b>%-11s</b></tt>%s" "Year:" ${year}) \
+    )
 
     # Second menu
     declare -a entries=( \
@@ -72,6 +137,7 @@ function menu_ref() {
         " Export" \
         " Send to DPT-RP1" \
         " From same author(s)" \
+        " Edit" \
         " Back" \
         "  " \
         ${bibinfo[@]})
@@ -79,7 +145,7 @@ function menu_ref() {
     selected=$(printf '%s\n' "${entries[@]}" | \
         ${WOFI} -i \
         --width 800 \
-        --height 250 \
+        --height 280 \
         --prompt 'Action...' \
         --dmenu \
         --cache-file /dev/null)
@@ -99,13 +165,29 @@ function menu_ref() {
 
     case $selected in
       'export')
-          ${PAPIS} export --format bibtex "ref:${bibkey}" | wl-copy;;
+          if [[ -z ${library} ]]; then
+              ${PAPIS} export --format bibtex "ref:${bibkey}" | wl-copy
+          else
+              ${PAPIS} --lib $library export --format bibtex "ref:${bibkey}" | wl-copy
+          fi
+          ;;
       'open')
-          ${PAPIS} open --tool ${PDFVIEWER} "ref:${bibkey}";;
+          if [[ -z ${library} ]]; then
+              ${PAPIS} open --tool ${PDFVIEWER} "ref:${bibkey}"
+          else
+              ${PAPIS} --lib ${library} open --tool ${PDFVIEWER} "ref:${bibkey}"
+          fi
+          ;;
+      'edit')
+          if [[ -z ${library} ]]; then
+              ${PAPIS} edit -e nvim-gtk "ref:${bibkey}"
+          else
+              ${PAPIS} --lib ${library} edit -e nvim-gtk "ref:${bibkey}"
+          fi;;
       'from same author(s)')
-          menu_same_authors ${bibkey};;
+          menu_same_authors ${bibkey} ${library};;
       'back')
-          main_fun;;
+          main_fun ${library};;
     esac
 }
 
@@ -134,6 +216,33 @@ function menu_same_authors() {
     fi
 
     menu_ref ${bibkey}
+
+}
+
+function menu_library() {
+    prompt='Choose library...'
+    # Get libraries
+    selected=$(${PAPIS} list --libraries | ${WOFI} \
+        --insensitive \
+        --allow-markup \
+        --width 800 \
+        --height 450 \
+        --prompt="${prompt}" \
+        --dmenu \
+        --cache-file ${CACHE_LIBS}
+    )
+
+    rm ${CACHE_LIBS}
+
+    # Store bibkey of the selected reference
+    library=$(echo ${selected} | awk '{print $1}')
+
+    # Exit script if no selection is made
+    if [[ ${library} == "" ]]; then
+        exit 1
+    fi
+
+    main_fun ${library}
 
 }
 
