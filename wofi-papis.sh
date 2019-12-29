@@ -10,7 +10,8 @@ PAPIS=papis
 CACHE=~/.local/tmp/papis_wofi
 CACHE_AUTH=~/.local/tmp/papis_wofi_auth
 CACHE_LIBS=~/.local/tmp/papis_wofi_libs
-SHOW_FORMAT='{doc[ref]} <i>{doc[author]}</i> – <b>"{doc[title]}"</b>'
+# The first two fields should not be changed
+SHOW_FORMAT='{doc[files]} {doc[ref]} <i>{doc[author]}</i> – <b>"{doc[title]}"</b>'
 TERMINAL_EDIT=termite
 # Get default library
 # DEFAULT_LIB=$(${PAPIS} config default-library)
@@ -21,13 +22,18 @@ function list_publications() {
     # If an argument is passed, it is used to change to another existing
     # library
     echo " <b>Change library</b>"
+    echo " <b>Add publication</b>"
+    echo " <b>Sync. repo</b>"
     local library
+
     if [[ -z $1 ]]; then
         library=${DEFAULT_LIB}
     else
         library=$1
     fi
 
+    # The publications in the library are listed.
+    # Also, we check whether a file is present or not.
     ${PAPIS} \
         --lib ${library} \
         list \
@@ -37,8 +43,17 @@ function list_publications() {
         awk \
         '{
             gsub(/&/, "&amp;");
-            key=$1; $1="";
-            printf "<tt><b> %-18s</b></tt>  %s\n", key, $0
+            if ($1 ~ /^\[.*\]/) {
+                file="";
+                $1="";
+                key=$2; $2="";
+            }
+            else {
+                file="";
+                key=$1;
+                $1="";
+            }
+            printf "<tt><b>%-2s %-18s</b></tt>  %s\n", file, key, $0
         }'
 }
 
