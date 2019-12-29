@@ -165,13 +165,14 @@ function menu_ref() {
         " From same author(s)" \
         " Edit" \
         " Back" \
+        " More actions" \
         "  " \
         ${bibinfo[@]})
 
     selected=$(printf '%s\n' "${entries[@]}" | \
         ${WOFI} -i \
         --width 800 \
-        --height 280 \
+        --height 300 \
         --prompt 'Action...' \
         --dmenu \
         --cache-file /dev/null)
