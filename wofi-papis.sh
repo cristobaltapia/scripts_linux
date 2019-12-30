@@ -75,7 +75,16 @@ function list_publications_auth() {
         awk \
         '{
             gsub(/&/, "&amp;");
-            key=$1; $1="";
+            if ($1 ~ /^\[.*\]/) {
+                file="";
+                $1="";
+                key=$2; $2="";
+            }
+            else {
+                file="";
+                key=$1;
+                $1="";
+            }
             printf "<tt><b> %-18s</b></tt>  %s\n", key, $0
         }'
 }
