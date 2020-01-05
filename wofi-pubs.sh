@@ -53,40 +53,6 @@ function main_fun() {
 
 }
 
-function menu_ref() {
-    IFS=$'\n'
-    # Analyze bibfile information
-    bibkey=$1
-    declare -a bibinfo=$(${PUBS} export ${bibkey} | ~/.local/bin/parse-bib-file)
-
-    # Second menu
-    declare -a entries=(" Open" " Export" " Send to DPT-RP1" " Back" "  " ${bibinfo[@]})
-
-    selected=$(printf '%s\n' "${entries[@]}" | ${WOFI} -i --width 800 --height 220 --prompt 'Action...' --dmenu --cache-file /dev/null)
-
-    # Exit script if no selection is made
-    if [[ ${selected} == "" ]]; then
-        exit 1
-    fi
-
-    selected=$(echo ${selected} | awk \
-        '{
-        $1="";
-        gsub(/^[ \t]+/, "", $0);
-        $0=tolower($0);
-        printf "%s", $0
-        }')
-
-    case $selected in
-      export)
-        ${PUBS} export ${bibkey} | wl-copy;;
-      open)
-        ${PUBS} doc open --with ${PDFVIEWER} ${bibkey};;
-      back)
-        main_fun;;
-    esac
-}
-
 # Menu to display actions and information of selected reference
 # $1 : bibkey
 # $2 : library
