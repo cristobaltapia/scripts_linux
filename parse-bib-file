@@ -62,7 +62,7 @@ if __name__ == "__main__":
     bib = argumetns.bibfile
 
     parser = BibTexParser()
-    parser.ignore_nonstandard_types = False
+    parser.ignore_nonstandard_types = True
 
     bib_db = bibtexparser.loads(bib, parser)
 
