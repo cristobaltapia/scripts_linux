@@ -5,17 +5,19 @@
 # of the papis configuration file
 
 PDFVIEWER=zathura
-WOFI=wofi
-PAPIS=papis
+WOFI=~/.local/bin/wofi
+PAPIS=~/.local/bin/papis
 CACHE=~/.local/tmp/papis_wofi
 CACHE_AUTH=~/.local/tmp/papis_wofi_auth
 CACHE_LIBS=~/.local/tmp/papis_wofi_libs
 # The first two fields should not be changed
 SHOW_FORMAT='{doc[files]} {doc[ref]} <i>{doc[author]}</i> – <b>"{doc[title]}"</b>'
-TERMINAL_EDIT=termite
+TERMINAL_EDIT=terminator
 # Get default library
 # DEFAULT_LIB=$(${PAPIS} config default-library)
 DEFAULT_LIB=papers
+
+mkdir ${HOME}/.local/tmp
 
 # List all the publications
 function list_publications() {
@@ -44,7 +46,7 @@ function list_publications() {
         '{
             gsub(/&/, "&amp;");
             if ($1 ~ /^\[.*\]/) {
-                file="";
+                file="";
                 $1="";
                 key=$2; $2="";
             }
@@ -53,7 +55,7 @@ function list_publications() {
                 key=$1;
                 $1="";
             }
-            printf "<tt><b>%-2s %-18s</b></tt>  %s\n", file, key, $0
+            printf "%-2s <tt><b>%-18s</b></tt>  %s\n", file, key, $0
         }'
 }
 
@@ -76,7 +78,7 @@ function list_publications_auth() {
         '{
             gsub(/&/, "&amp;");
             if ($1 ~ /^\[.*\]/) {
-                file="";
+                file="";
                 $1="";
                 key=$2; $2="";
             }
@@ -85,7 +87,7 @@ function list_publications_auth() {
                 key=$1;
                 $1="";
             }
-            printf "<tt><b> %-18s</b></tt>  %s\n", key, $0
+            printf "%-2s <tt><b>%-18s</b></tt>  %s\n", file, key, $0
         }'
 }
 
@@ -205,8 +207,10 @@ function menu_ref() {
       'open')
           ${PAPIS} --lib ${library} open --tool ${PDFVIEWER} "ref:${bibkey}";;
       'edit')
-          ${TERMINAL_EDIT} -t "Papis edit" \
-              --exec="${PAPIS} --lib ${library} edit 'ref:${bibkey}'";;
+          # ${TERMINAL_EDIT} -t "Papis edit" \
+          #    --exec="${PAPIS} --lib ${library} edit 'ref:${bibkey}'";;
+          ${TERMINAL_EDIT} -T "Papis edit" \
+              -x "${PAPIS} --lib ${library} edit 'ref:${bibkey}'";;
       'from same author(s)')
           menu_same_authors ${bibkey} ${library};;
       'back')
