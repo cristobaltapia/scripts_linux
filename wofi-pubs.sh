@@ -81,7 +81,7 @@ function menu_ref() {
     selected=$(printf '%s\n' "${entries[@]}" | \
         ${WOFI} -i \
         --width 800 \
-        --height 300 \
+        --height 330 \
         --prompt 'Action...' \
         --dmenu \
         --cache-file /dev/null)

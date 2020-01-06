@@ -21,15 +21,25 @@ def print_authors(au: str):
     print(f"{query}")
 
 
-def print_all(year, author, title):
+def print_all(year, author, title, sub):
     au = "Author(s):"
     ti = "Title:"
+    su = "Subtitle:"
     ye = "Year:"
-    print(
-        f" <tt><b>{au:<11}</b></tt> {author}\n"
-        + f" <tt><b>{ti:<11}</b></tt> {title}\n"
-        + f" <tt><b>{ye:<11}</b></tt> {year}"
-    )
+    if sub is None:
+        print(
+            f" <tt><b>{au:<11}</b></tt> {author}\n"
+            + f" <tt><b>{ti:<11}</b></tt> {title}\n"
+            + f" <tt><b>{ye:<11}</b></tt> {year}\n"
+            + "  "
+        )
+    else:
+        print(
+            f" <tt><b>{au:<11}</b></tt> {author}\n"
+            + f" <tt><b>{ti:<11}</b></tt> {title}\n"
+            + f" <tt><b>{su:<11}</b></tt> {sub}\n"
+            + f" <tt><b>{ye:<11}</b></tt> {year}"
+        )
 
 
 if __name__ == "__main__":
@@ -71,8 +81,14 @@ if __name__ == "__main__":
     author = bib_db.entries[0]["author"]
     year = bib_db.entries[0]["year"]
     key = bib_db.entries[0]["ID"]
+    # Check whether ther is a subtitle
+    if "subtitle" in bib_db.entries[0]:
+        sub = bib_db.entries[0]["subtitle"]
+    else:
+        sub = None
+
     if argumetns.all:
-        print_all(year, author, title)
+        print_all(year, author, title, sub)
     elif argumetns.author:
         print_authors(author)
 
