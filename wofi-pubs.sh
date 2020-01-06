@@ -17,8 +17,8 @@ function list_publications() {
         '{
             gsub(/&/, "&amp;");
             key=$1; $1="";
-            authors=gensub(/(^[^\"]*)/, "<b>\\1</b>", 1, $0);
-            title=gensub(/(\".+\")/, "– <i>\\1</i>", 1, authors);
+            authors=gensub(/(^[^"]*)/, "<b>\\1</b>", 1, $0);
+            title=gensub(/(".+")/, "– <i>\\1</i>", 1, authors);
             info=gensub(/([^>]+$)/, "", 1, title);
             if (/\[pdf\]/){
                 printf "<tt>%-2s<b>%-18s</b></tt>  %s\n", "", key, info
@@ -30,26 +30,29 @@ function list_publications() {
 
 function main_fun() {
     prompt='search for publication...'
-    PUBKEY=$(list_publications | ${WOFI} \
+    SELECTION=$(list_publications | ${WOFI} \
         --insensitive \
         --allow-markup \
         --width 1200 \
         --height 450 \
         --prompt="${prompt}" \
         --dmenu \
-        --cache-file ${CACHE})
+        --cache-file ${CACHE} | sed -e 's/<[^>]*>//g')
 
     rm ${CACHE}
 
-    # Store bibkey of the selected reference
-    bibkey=$(echo ${PUBKEY} | awk '{sub(/\[/, " "); sub(/\]/, " "); printf $3}')
-
     # Exit script if no selection is made
-    if [[ ${bibkey} == "" ]]; then
-        exit 1
-    fi
-
-    menu_ref ${bibkey}
+    case ${SELECTION} in
+        "" )
+            exit 1;;
+        " Add publication" )
+            menu_add;;
+        * )
+            bibkey=$(echo ${SELECTION} | awk \
+                '{sub(/\[/, " "); sub(/\]/, " "); printf $2}')
+            # Store bibkey of the selected reference
+            menu_ref ${bibkey};;
+    esac
 
 }
 
@@ -109,6 +112,66 @@ function menu_ref() {
       'back')
           main_fun ${library};;
     esac
+}
+
+# Function to add a new document to the library
+function menu_add() {
+    # Options
+    declare -a entries=( \
+        " DOI" \
+        " arXiv" \
+        " ISBN" \
+        " Bibfile" \
+        " Manual Bibfile" \
+        " Back")
+
+    selected=$(printf '%s\n' "${entries[@]}" | \
+        ${WOFI} -i \
+        --width 800 \
+        --height 300 \
+        --prompt 'From...' \
+        --dmenu \
+        --cache-file /dev/null | awk \
+            '{
+                $1="";
+                gsub(/^[ \t]+/, "", $0);
+                $0=tolower($0);
+                printf "%s", $0
+            }')
+
+    case $selected in
+        "doi" )
+            DOI=$(zenity --entry --text="DOI to import:")
+            pubs add --doi ${DOI};;
+
+        "isbn" )
+            ISBN=$(zenity --entry --text="ISBN to import:")
+            ERROR=$( { pubs add --isbn ${ISBN} | sed s/Output/Useless/ > outfile; } 2>&1 )
+            if [[ -n $ERROR ]]; then
+                ERROR2=$(echo $ERROR | fold -w 40 -s)
+                zenity --error --text="${ERROR2}" --ellipsize
+            fi
+            ;;
+
+        "arxiv" )
+            ARXIV=$(zenity --entry --text="arXiv to import:")
+            pubs add --arxiv ${ARXIV};;
+
+        "bibfile" )
+            BIBFILE=$(zenity --file-selection --file-filter=*.bib --text="Bibfile to import:")
+            pubs add ${BIBFILE};;
+
+        "manual bibfile" )
+            BIBFILE=~/.local/tmp/bibfile_tmp.bib
+            ${TERMINAL_EDIT} -t "Papis edit" \
+                  --exec="nvim ${BIBFILE}"
+            pubs add ${BIBFILE};;
+
+        "*" )
+    esac
+
+    # Add file
+
 }
 
 
