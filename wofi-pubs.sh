@@ -2,8 +2,8 @@
 # Search through your pubs database and open file
 
 PDFVIEWER=zathura
-WOFI=wofi
-PUBS=pubs
+WOFI=~/.local/bin/wofi
+PUBS=~/.local/bin/pubs
 CACHE=~/.local/tmp/pubs_wofi
 CACHE_AUTH=~/.local/tmp/pubs_wofi_auth
 CACHE_LIBS=~/.local/tmp/pubs_wofi_libs
@@ -11,8 +11,8 @@ TERMINAL_EDIT=termite
 
 function list_publications() {
     echo " <b>Change library</b>"
-    echo " <b>Add publication</b>"
-    echo " <b>Sync. repo</b>"
+    echo " <b>Add publication</b>"
+    echo " <b>Sync. repo</b>"
 	${PUBS} list | (awk \
         '{
             gsub(/&/, "&amp;");
@@ -21,10 +21,10 @@ function list_publications() {
             title=gensub(/(".+")/, "– <i>\\1</i>", 1, authors);
             info=gensub(/([^>]+$)/, "", 1, title);
             if (/\[pdf\]/){
-                printf "<tt>%-2s<b>%-18s</b></tt>  %s\n", "", key, info
+                printf "%-2s<tt><b>%-18s</b></tt>  %s\n", "", key, info
             }
             else
-                printf "<tt>%-2s<b>%-18s</b></tt>  %s\n", "", key, info
+                printf "%-2s<tt><b>%-18s</b></tt>  %s\n", "", key, info
         }')
 }
 
@@ -37,15 +37,13 @@ function main_fun() {
         --height 450 \
         --prompt="${prompt}" \
         --dmenu \
-        --cache-file ${CACHE} | sed -e 's/<[^>]*>//g')
-
-    rm ${CACHE}
+        --cache-file /dev/null | sed -e 's/<[^>]*>//g')
 
     # Exit script if no selection is made
     case ${SELECTION} in
         "" )
             exit 1;;
-        " Add publication" )
+        " Add publication" )
             menu_add;;
         * )
             bibkey=$(echo ${SELECTION} | awk \
