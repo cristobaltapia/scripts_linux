@@ -154,8 +154,12 @@ function menu_add() {
             OUT=$($PUBS -c $lib_conf add --doi ${DOI} 2> ~/.local/tmp/tmp_pubs)
             ERROR=$(<~/.local/tmp/tmp_pubs)
 
-            notify_add_and_doc "${OUT}" "${ERROR}"
+            notify_add "${OUT}" "${ERROR}"
 
+            # Get assigned citation key
+            bibkey=$(echo "${OUT}" | awk -F "[][]" '{ print $2 }')
+            # Add doc
+            add_doc $bibkey $lib_conf
             ;;
 
         # Import from ISBN
@@ -165,7 +169,12 @@ function menu_add() {
             OUT=$($PUBS -c $lib_conf add --isbn ${ISBN} 2> ~/.local/tmp/tmp_pubs)
             ERROR=$(<~/.local/tmp/tmp_pubs)
 
-            notify_add_and_doc "${OUT}" "${ERROR}"
+            notify_add"${OUT}" "${ERROR}"
+
+            # Get assigned citation key
+            bibkey=$(echo "${OUT}" | awk -F "[][]" '{ print $2 }')
+            # Add doc
+            add_doc $bibkey $lib_conf
 
             ;;
 
@@ -175,7 +184,12 @@ function menu_add() {
             OUT=$($PUBS -c $lib_conf add --arxiv ${ARXIV} 2> ~/.local/tmp/tmp_pubs)
             ERROR=$(<~/.local/tmp/tmp_pubs)
 
-            notify_add_and_doc "${OUT}" "${ERROR}"
+            notify_add"${OUT}" "${ERROR}"
+
+            # Get assigned citation key
+            bibkey=$(echo "${OUT}" | awk -F "[][]" '{ print $2 }')
+            # Add doc
+            add_doc $bibkey $lib_conf
 
             ;;
 
@@ -185,7 +199,12 @@ function menu_add() {
             OUT=$($PUBS -c $lib_conf add ${BIBFILE} 2> ~/.local/tmp/tmp_pubs)
             ERROR=$(<~/.local/tmp/tmp_pubs)
 
-            notify_add_and_doc "${OUT}" "${ERROR}"
+            notify_add"${OUT}" "${ERROR}"
+
+            # Get assigned citation key
+            bibkey=$(echo "${OUT}" | awk -F "[][]" '{ print $2 }')
+            # Add doc
+            add_doc $bibkey $lib_conf
 
             ;;
 
@@ -198,7 +217,12 @@ function menu_add() {
 
             ERROR=$(<~/.local/tmp/tmp_pubs)
 
-            notify_add_and_doc "${OUT}" "${ERROR}"
+            notify_add"${OUT}" "${ERROR}"
+
+            # Get assigned citation key
+            bibkey=$(echo "${OUT}" | awk -F "[][]" '{ print $2 }')
+            # Add doc
+            add_doc $bibkey $lib_conf
 
             ;;
 
@@ -224,9 +248,10 @@ function menu_change_lib() {
     main_fun $lib_selected
 }
 
-function notify_add_and_doc() {
+function notify_add() {
     if [[ -n $2 ]]; then
         display_error "$2"
+        exit 1
     else
         # Get assigned citation key
         bibkey=$(echo "${1}" | awk -F "[][]" '{ print $2 }')
@@ -254,6 +279,16 @@ function display_successful_add() {
         -t 10 \
         "Pubs: $1" \
         "$2"
+}
+
+
+# Add document to citation
+# $1 : cite-key
+# $2 : library
+function add_doc() {
+    local DOCFILE=$( zenity --file-selection --file-filter="*.pdf" )
+
+    $PUBS -c $2 doc add "${DOCFILE}" $1
 }
 
 # Call the main function
