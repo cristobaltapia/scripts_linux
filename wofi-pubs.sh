@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # Search through your pubs database and open file
+# Needs FontAwesome
 
 PDFVIEWER=zathura
-WOFI=~/.local/bin/wofi
-PUBS=~/.local/bin/pubs
+WOFI=wofi
+PUBS=pubs
+CONFIGS_DIR=~/.config/pubs
+DEFAULT_LIB=~/.config/pubs/main_library.conf
 CACHE=~/.local/tmp/pubs_wofi
 CACHE_AUTH=~/.local/tmp/pubs_wofi_auth
 CACHE_LIBS=~/.local/tmp/pubs_wofi_libs
@@ -13,7 +16,8 @@ function list_publications() {
     echo " <b>Change library</b>"
     echo " <b>Add publication</b>"
     echo " <b>Sync. repo</b>"
-	${PUBS} list | (awk \
+    local lib_conf=$1
+	${PUBS} -c ${lib_conf} list | (awk \
         '{
             gsub(/&/, "&amp;");
             key=$1; $1="";
@@ -30,7 +34,9 @@ function list_publications() {
 
 function main_fun() {
     prompt='search for publication...'
-    SELECTION=$(list_publications | ${WOFI} \
+    local lib_conf=$1
+
+    SELECTION=$(list_publications ${lib_conf} | ${WOFI} \
         --insensitive \
         --allow-markup \
         --width 1200 \
@@ -44,12 +50,14 @@ function main_fun() {
         "" )
             exit 1;;
         " Add publication" )
-            menu_add;;
+            menu_add ${lib_conf};;
+        " Change library" )
+            menu_change_lib;;
         * )
             bibkey=$(echo ${SELECTION} | awk \
                 '{sub(/\[/, " "); sub(/\]/, " "); printf $2}')
             # Store bibkey of the selected reference
-            menu_ref ${bibkey};;
+            menu_ref ${bibkey} ${lib_conf};;
     esac
 
 }
@@ -60,9 +68,10 @@ function main_fun() {
 function menu_ref() {
     IFS=$'\n'
     # Analyze bibfile information
-    bibkey=$1
+    local bibkey=$1
+    local lib_conf=$2
 
-    declare -a bibinfo=$(${PUBS} export ${bibkey} | ~/.local/bin/parse-bib-file --all)
+    declare -a bibinfo=$(${PUBS} -c ${lib_conf} export ${bibkey} | ~/.local/bin/parse-bib-file --all)
 
     # Second menu
     declare -a entries=( \
@@ -99,21 +108,22 @@ function menu_ref() {
 
     case $selected in
       'export')
-        ${PUBS} export ${bibkey} | wl-copy;;
+        ${PUBS} -c ${lib_conf} export ${bibkey} | wl-copy;;
       'open')
-        ${PUBS} doc open --with ${PDFVIEWER} ${bibkey};;
+        ${PUBS} -c ${lib_conf} doc open --with ${PDFVIEWER} ${bibkey};;
       'edit')
-          ${TERMINAL_EDIT} -t "Papis edit" \
-              --exec="${PUBS} edit ${bibkey}";;
+          ${TERMINAL_EDIT} -t "Pubs edit" \
+              -e "${PUBS} -c ${lib_conf} edit ${bibkey}";;
       'from same author(s)')
-          menu_same_authors ${bibkey} ${library};;
+          menu_same_authors ${bibkey} ${lib_conf};;
       'back')
-          main_fun ${library};;
+          main_fun ${lib_conf};;
     esac
 }
 
 # Function to add a new document to the library
 function menu_add() {
+    local lib_conf=$1
     # Options
     declare -a entries=( \
         " DOI" \
@@ -138,40 +148,113 @@ function menu_add() {
             }')
 
     case $selected in
+        # Import from DOI
         "doi" )
             DOI=$(zenity --entry --text="DOI to import:")
-            pubs add --doi ${DOI};;
+            OUT=$($PUBS -c $lib_conf add --doi ${DOI} 2> ~/.local/tmp/tmp_pubs)
+            ERROR=$(<~/.local/tmp/tmp_pubs)
 
-        "isbn" )
-            ISBN=$(zenity --entry --text="ISBN to import:")
-            ERROR=$( { pubs add --isbn ${ISBN} | sed s/Output/Useless/ > outfile; } 2>&1 )
-            if [[ -n $ERROR ]]; then
-                ERROR2=$(echo $ERROR | fold -w 40 -s)
-                zenity --error --text="${ERROR2}" --ellipsize
-            fi
+            notify_add_and_doc "${OUT}" "${ERROR}"
+
             ;;
 
+        # Import from ISBN
+        "isbn" )
+            ISBN=$(zenity --entry --text="ISBN to import:")
+            # Capture stdout and stderr
+            OUT=$($PUBS -c $lib_conf add --isbn ${ISBN} 2> ~/.local/tmp/tmp_pubs)
+            ERROR=$(<~/.local/tmp/tmp_pubs)
+
+            notify_add_and_doc "${OUT}" "${ERROR}"
+
+            ;;
+
+        # Import from arXiv
         "arxiv" )
             ARXIV=$(zenity --entry --text="arXiv to import:")
-            pubs add --arxiv ${ARXIV};;
+            OUT=$($PUBS -c $lib_conf add --arxiv ${ARXIV} 2> ~/.local/tmp/tmp_pubs)
+            ERROR=$(<~/.local/tmp/tmp_pubs)
 
+            notify_add_and_doc "${OUT}" "${ERROR}"
+
+            ;;
+
+        # Import from bibfile
         "bibfile" )
             BIBFILE=$(zenity --file-selection --file-filter=*.bib --text="Bibfile to import:")
-            pubs add ${BIBFILE};;
+            OUT=$($PUBS -c $lib_conf add ${BIBFILE} 2> ~/.local/tmp/tmp_pubs)
+            ERROR=$(<~/.local/tmp/tmp_pubs)
 
+            notify_add_and_doc "${OUT}" "${ERROR}"
+
+            ;;
+
+        # Manual entry
         "manual bibfile" )
             BIBFILE=~/.local/tmp/bibfile_tmp.bib
-            ${TERMINAL_EDIT} -t "Papis edit" \
-                  --exec="nvim ${BIBFILE}"
-            pubs add ${BIBFILE};;
+            ${TERMINAL_EDIT} -t "Pubs edit" \
+                  -e "nvim ${BIBFILE}"
+            OUT=$($PUBS -c $lib_conf add ${BIBFILE} 2> ~/.local/tmp/tmp_pubs)
+
+            ERROR=$(<~/.local/tmp/tmp_pubs)
+
+            notify_add_and_doc "${OUT}" "${ERROR}"
+
+            ;;
 
         "*" )
     esac
 
-    # Add file
-
 }
 
+function menu_change_lib() {
+    # List libraries from the specified folder
+    selected=$(ls -1 ${CONFIGS_DIR} | \
+        awk '{ gsub(".*/", ""); printf "%s\n", $0 }' | \
+        ${WOFI} -i \
+        --width 400 \
+        --height 300 \
+        --prompt 'Choose library...' \
+        --dmenu \
+        --cache-file /dev/null \
+    )
+
+    local lib_selected="${CONFIGS_DIR}/${selected}"
+    # Call the main function with the selected library as parameter
+    main_fun $lib_selected
+}
+
+function notify_add_and_doc() {
+    if [[ -n $2 ]]; then
+        display_error "$2"
+    else
+        # Get assigned citation key
+        bibkey=$(echo "${1}" | awk -F "[][]" '{ print $2 }')
+        display_successful_add $bibkey "$1"
+    fi
+}
+
+# When the addition of a citation fails, this function is called to notify
+# the user about it
+function display_error() {
+    #function_body
+    notify-send -a "Pubs" \
+        -u normal \
+        -t 10 \
+        "Pubs Error" \
+        "$1"
+}
+
+# Send a notification to the user when the addition of the citation was
+# successfull
+function display_successful_add() {
+    #function_body
+    notify-send -a "Pubs" \
+        -u normal \
+        -t 10 \
+        "Pubs: $1" \
+        "$2"
+}
 
 # Call the main function
-main_fun
+main_fun $DEFAULT_LIB
