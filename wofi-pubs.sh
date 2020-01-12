@@ -121,6 +121,49 @@ function menu_ref() {
     esac
 }
 
+# Menu with more actions for a citation
+# $1 : citekey
+# $2 : library
+function menu_more_actions() {
+    IFS=$'\n'
+    # Analyze bibfile information
+    local bibkey=$1
+    local lib_conf=$2
+
+    declare -a bibinfo=$(${PUBS} -c ${lib_conf} export ${bibkey} | ~/.local/bin/parse-bib-file --all)
+
+    # Second menu
+    declare -a entries=( \
+        " Add document" \
+        " Add tag" \
+        " Back" )
+
+    selected=$(printf '%s\n' "${entries[@]}" | \
+        ${WOFI} -i \
+        --width 800 \
+        --height 330 \
+        --prompt 'Action...' \
+        --dmenu \
+        --cache-file /dev/null)
+
+    selected=$(echo ${selected} | awk \
+        '{
+        $1="";
+        gsub(/^[ \t]+/, "", $0);
+        $0=tolower($0);
+        printf "%s", $0
+        }')
+
+    case $selected in
+      'add document')
+          add_doc ${bibkey} ${lib_conf};;
+      'add tag')
+          add_tag ${bibkey} ${lib_conf};;
+      'back')
+          menu_ref ${bibkey} ${lib_conf};;
+    esac
+}
+
 # Function to add a new document to the library
 function menu_add() {
     local lib_conf=$1
