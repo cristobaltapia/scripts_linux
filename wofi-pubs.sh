@@ -334,5 +334,39 @@ function add_doc() {
     $PUBS -c $2 doc add "${DOCFILE}" $1
 }
 
+
+# Add tag to citation
+# $1 : cite-key
+# $2 : library
+function add_tag() {
+    local bibkey=$1
+    local lib_conf=$2
+
+    # Get tags
+    # TODO: mark tags already belonging to citation
+    local tags=$($PUBS -c ${lib_conf} tag | awk '{gsub(" ", "\n"); print $0 }')
+    # TODO: report bug in pubs regarding printing of tags
+    local SELECTMODE=1
+    declare -a selection=""
+
+    # Add tags until no new tag is given
+    while [[ $SELECTMODE ]]; do
+        selected=$(printf "${tags}" | \
+            ${WOFI} -i \
+            --width 800 \
+            --height 330 \
+            --prompt 'Add a tag...' \
+            --exec-search \
+            --dmenu \
+            --cache-file /dev/null)
+
+        if [[ $selected == "" ]]; then
+            break
+        fi
+
+        $PUBS -c $lib_conf tag $bibkey "${selected}"
+    done
+}
+
 # Call the main function
 main_fun $DEFAULT_LIB
