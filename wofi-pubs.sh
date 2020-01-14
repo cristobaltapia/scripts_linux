@@ -114,8 +114,12 @@ function menu_ref() {
       'edit')
           ${TERMINAL_EDIT} -t "Pubs edit" \
               -e "${PUBS} -c ${lib_conf} edit ${bibkey}";;
+      'send to dpt-rp1')
+          send_to_dpt ${bibkey} ${lib_conf};;
       'from same author(s)')
           menu_same_authors ${bibkey} ${lib_conf};;
+      'more actions')
+          menu_more_actions ${bibkey} ${lib_conf};;
       'back')
           main_fun ${lib_conf};;
     esac
@@ -291,6 +295,9 @@ function menu_change_lib() {
     main_fun $lib_selected
 }
 
+# Notification
+# $1 : bibkey
+# $2 : out
 function notify_add() {
     if [[ -n $2 ]]; then
         display_error "$2"
@@ -366,6 +373,15 @@ function add_tag() {
 
         $PUBS -c $lib_conf tag $bibkey "${selected}"
     done
+}
+
+# Copy document to the DPT-RP1 (requires the python library
+# 'dptrp1'
+# $1 : cite-key
+# $2 : library
+function send_to_dpt() {
+    ~/.local/bin/pubs_to_dptrp1 --library $2 send $1
+    notify_add $1 "Document sent to DPT-RP1!"
 }
 
 # Call the main function
