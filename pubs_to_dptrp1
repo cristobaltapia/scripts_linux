@@ -9,8 +9,6 @@ import unicodedata
 from pathlib import Path, PurePath
 from os.path import expanduser
 
-import bibtexparser
-from bibtexparser.bparser import BibTexParser
 from pubs.config import load_conf
 from pubs.repo import Repository
 

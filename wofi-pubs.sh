@@ -296,8 +296,8 @@ function menu_change_lib() {
 }
 
 # Notification
-# $1 : bibkey
-# $2 : out
+# $1 : stdout
+# $2 : stderr
 function notify_add() {
     if [[ -n $2 ]]; then
         display_error "$2"
@@ -381,7 +381,7 @@ function add_tag() {
 # $2 : library
 function send_to_dpt() {
     ~/.local/bin/pubs_to_dptrp1 --library $2 send $1
-    notify_add $1 "Document sent to DPT-RP1!"
+    notify_add "Document [$1] sent to DPT-RP1!" ""
 }
 
 # Call the main function
