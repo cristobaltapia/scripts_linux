@@ -11,6 +11,8 @@ CACHE=~/.local/tmp/pubs_wofi
 CACHE_AUTH=~/.local/tmp/pubs_wofi_auth
 CACHE_LIBS=~/.local/tmp/pubs_wofi_libs
 TERMINAL_EDIT=termite
+BIB_PARSE=~/.local/bin/parse-bib-file
+PUBS_TO_DPT=~/.local/bin/pubs_to_dptrp1
 
 function list_publications() {
     echo " <b>Change library</b>"
@@ -100,7 +102,7 @@ function menu_ref() {
     local bibkey=$1
     local lib_conf=$2
 
-    declare -a bibinfo=$(${PUBS} -c ${lib_conf} export ${bibkey} | ~/.local/bin/parse-bib-file --all)
+    declare -a bibinfo=$(${PUBS} -c ${lib_conf} export ${bibkey} | ${BIB_PARSE} --all)
 
     declare -a tags=$(${PUBS} -c ${lib_conf} tag ${bibkey} | awk '{gsub(" ", "; "); print $0}')
 
@@ -165,7 +167,7 @@ function menu_more_actions() {
     local bibkey=$1
     local lib_conf=$2
 
-    declare -a bibinfo=$(${PUBS} -c ${lib_conf} export ${bibkey} | ~/.local/bin/parse-bib-file --all)
+    declare -a bibinfo=$(${PUBS} -c ${lib_conf} export ${bibkey} | ${BIB_PARSE} --all)
 
     # Second menu
     declare -a entries=( \
@@ -467,7 +469,7 @@ function add_tag() {
 # $1 : cite-key
 # $2 : library
 function send_to_dpt() {
-    ~/.local/bin/pubs_to_dptrp1 --library $2 send $1
+    ${PUBS_TO_DPT} --library $2 send $1
     notify_add "Document [$1] sent to DPT-RP1!" ""
 }
 
