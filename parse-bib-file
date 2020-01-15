@@ -73,16 +73,21 @@ if __name__ == "__main__":
     parser = BibTexParser()
     parser.ignore_nonstandard_types = True
 
-    bib_db = bibtexparser.loads(bib, parser)
+    bib_pars = bibtexparser.loads(bib, parser)
+    bib_db = bib_pars.entries[0]
 
     # Get the relevant information
-    title = bib_db.entries[0]["title"]
-    author = bib_db.entries[0]["author"]
-    year = bib_db.entries[0]["year"]
-    key = bib_db.entries[0]["ID"]
+    bib_type = bib_db["ENTRYTYPE"]
+    if bib_type in ["misc", "standard"]:
+        author = bib_db["organization"]
+    else:
+        author = bib_db["author"]
+
+    title = bib_db["title"]
+    year = bib_db["year"]
     # Check whether ther is a subtitle
-    if "subtitle" in bib_db.entries[0]:
-        sub = bib_db.entries[0]["subtitle"]
+    if "subtitle" in bib_db:
+        sub = bib_db["subtitle"]
     else:
         sub = None
 
