@@ -96,28 +96,37 @@ function main_fun() {
 # Menu to display actions and information of selected reference
 # $1 : bibkey
 # $2 : library
+# $3 : iformation shown in wofi in case the menu is re-called after
+#      some action within the same reference
 function menu_ref() {
     IFS=$'\n'
     # Analyze bibfile information
     local bibkey=$1
     local lib_conf=$2
 
-    declare -a bibinfo=$(${PUBS} -c ${lib_conf} export ${bibkey} | ${BIB_PARSE} --all)
+    # If the information to be shown in the wofi-menu has not been supplied,
+    # then we create the information, otherwise use the previously generated
+    # data (improves speed)
+    if [[ -z $3 ]]; then
+        declare -a bibinfo=$(${PUBS} -c ${lib_conf} export ${bibkey} | ${BIB_PARSE} --all)
 
-    declare -a tags=$(${PUBS} -c ${lib_conf} tag ${bibkey} | awk '{gsub(" ", "; "); print $0}')
+        declare -a tags=$(${PUBS} -c ${lib_conf} tag ${bibkey} | awk '{gsub(" ", "; "); print $0}')
+        # Second menu
+        declare -a entries=( \
+            " Open" \
+            " Export" \
+            " Send to DPT-RP1" \
+            " From same author(s)" \
+            " Edit" \
+            " Back" \
+            " More actions" \
+            "  " \
+            ${bibinfo[@]} \
+            " <tt><b>Tags:      </b></tt> ${tags}" )
+    else
+        entries=$3
+    fi
 
-    # Second menu
-    declare -a entries=( \
-        " Open" \
-        " Export" \
-        " Send to DPT-RP1" \
-        " From same author(s)" \
-        " Edit" \
-        " Back" \
-        " More actions" \
-        "  " \
-        ${bibinfo[@]} \
-        " <tt><b>Tags:      </b></tt> ${tags}" )
 
     selected=$(printf '%s\n' "${entries[@]}" | \
         ${WOFI} -i \
@@ -137,7 +146,7 @@ function menu_ref() {
 
     case $selected in
       '')
-          exit 1;;
+        exit 1;;
       'export')
         ${PUBS} -c ${lib_conf} export ${bibkey} | wl-copy;;
       'open')
