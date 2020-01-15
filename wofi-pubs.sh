@@ -146,16 +146,18 @@ function menu_ref() {
 
     case $selected in
       '')
-        exit 1;;
+          exit 1;;
       'export')
-        ${PUBS} -c ${lib_conf} export ${bibkey} | wl-copy;;
+          ${PUBS} -c ${lib_conf} export ${bibkey} | wl-copy;;
       'open')
-        ${PUBS} -c ${lib_conf} doc open --with ${PDFVIEWER} ${bibkey};;
+          ${PUBS} -c ${lib_conf} doc open --with ${PDFVIEWER} ${bibkey}
+          menu_ref ${bibkey} ${lib_conf} ${entries}
+          ;;
       'edit')
           ${TERMINAL_EDIT} -t "Pubs edit" \
-              -e "${PUBS} -c ${lib_conf} edit ${bibkey}"
-          menu_ref ${bibkey} ${lib_conf}
-                        ;;
+                -e "${PUBS} -c ${lib_conf} edit ${bibkey}"
+          menu_ref ${bibkey} ${lib_conf} ${entries}
+          ;;
       'send to dpt-rp1')
           send_to_dpt ${bibkey} ${lib_conf};;
       'from same author(s)')
