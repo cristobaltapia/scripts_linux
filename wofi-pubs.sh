@@ -142,7 +142,9 @@ function menu_ref() {
         ${PUBS} -c ${lib_conf} doc open --with ${PDFVIEWER} ${bibkey};;
       'edit')
           ${TERMINAL_EDIT} -t "Pubs edit" \
-              -e "${PUBS} -c ${lib_conf} edit ${bibkey}";;
+              -e "${PUBS} -c ${lib_conf} edit ${bibkey}"
+          menu_ref ${bibkey} ${lib_conf}
+                        ;;
       'send to dpt-rp1')
           send_to_dpt ${bibkey} ${lib_conf};;
       'from same author(s)')
