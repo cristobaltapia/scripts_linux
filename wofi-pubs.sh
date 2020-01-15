@@ -457,6 +457,9 @@ function add_tag() {
 
         $PUBS -c $lib_conf tag $bibkey "${selected}"
     done
+
+    # return to citation menu
+    menu_ref ${bibkey} ${lib_conf}
 }
 
 # Copy document to the DPT-RP1 (requires the python library
