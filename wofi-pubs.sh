@@ -15,9 +15,35 @@ TERMINAL_EDIT=termite
 function list_publications() {
     echo " <b>Change library</b>"
     echo " <b>Add publication</b>"
+    echo " <b>Search tags</b>"
     echo " <b>Sync. repo</b>"
     local lib_conf=$1
 	${PUBS} -c ${lib_conf} list | (awk \
+        '{
+            gsub(/&/, "&amp;");
+            key=$1; $1="";
+            authors=gensub(/(^[^"]*)/, "<b>\\1</b>", 1, $0);
+            title=gensub(/(".+")/, "– <i>\\1</i>", 1, authors);
+            info=gensub(/([^>]+$)/, "", 1, title);
+            if (/\[pdf\]/){
+                printf "%-2s<tt><b>%-18s</b></tt>  %s\n", "", key, info
+            }
+            else
+                printf "%-2s<tt><b>%-18s</b></tt>  %s\n", "", key, info
+        }')
+}
+
+# List publications filtered by tag
+# $1 : library
+# $2 : tag
+function list_pubs_tags() {
+    echo " <b>Change library</b>"
+    echo " <b>Add publication</b>"
+    echo " <b>Search tags</b>"
+    echo " <b>Sync. repo</b>"
+    local lib_conf=$1
+    local tag=$2
+	${PUBS} -c ${lib_conf} list "tags:${tag}" | (awk \
         '{
             gsub(/&/, "&amp;");
             key=$1; $1="";
@@ -53,6 +79,8 @@ function main_fun() {
             menu_add ${lib_conf};;
         " Change library" )
             menu_change_lib;;
+        " Search tags" )
+            menu_search_tags ${lib_conf};;
         * )
             bibkey=$(echo ${SELECTION} | awk \
                 '{sub(/\[/, " "); sub(/\]/, " "); printf $2}')
@@ -61,6 +89,7 @@ function main_fun() {
     esac
 
 }
+
 
 # Menu to display actions and information of selected reference
 # $1 : bibkey
@@ -293,6 +322,55 @@ function menu_change_lib() {
     local lib_selected="${CONFIGS_DIR}/${selected}"
     # Call the main function with the selected library as parameter
     main_fun $lib_selected
+}
+
+
+# Search tags
+# $1 : library
+function menu_search_tags() {
+    local lib_conf=$1
+
+    # FIXME: tag separation
+    local tags=$($PUBS -c ${lib_conf} tag | awk '{gsub(" ", "\n"); print $0}')
+
+    # List tags from the specified library
+    selected=$(printf '%s\n' "${tags[@]}" | \
+        ${WOFI} -i \
+        --width 400 \
+        --height 300 \
+        --prompt 'Search tags...' \
+        --dmenu \
+        --cache-file /dev/null \
+    )
+
+    # Use selected tag to filter citations
+    prompt='search for publication...'
+
+    SELECTION=$(list_pubs_tags ${lib_conf} ${selected} | ${WOFI} \
+        --insensitive \
+        --allow-markup \
+        --width 1200 \
+        --height 450 \
+        --prompt="${prompt}" \
+        --dmenu \
+        --cache-file /dev/null | sed -e 's/<[^>]*>//g')
+
+    # Exit script if no selection is made
+    case ${SELECTION} in
+        "" )
+            exit 1;;
+        " Add publication" )
+            menu_add ${lib_conf};;
+        " Change library" )
+            menu_change_lib;;
+        " Search tags" )
+            menu_search_tags ${lib_conf};;
+        * )
+            bibkey=$(echo ${SELECTION} | awk \
+                '{sub(/\[/, " "); sub(/\]/, " "); printf $2}')
+            # Store bibkey of the selected reference
+            menu_ref ${bibkey} ${lib_conf};;
+    esac
 }
 
 # Notification
