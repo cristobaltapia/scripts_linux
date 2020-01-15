@@ -30,8 +30,7 @@ def print_all(year, author, title, sub):
         print(
             f" <tt><b>{au:<11}</b></tt> {author}\n"
             + f" <tt><b>{ti:<11}</b></tt> {title}\n"
-            + f" <tt><b>{ye:<11}</b></tt> {year}\n"
-            + "  "
+            + f" <tt><b>{ye:<11}</b></tt> {year}"
         )
     else:
         print(
