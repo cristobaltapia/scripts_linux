@@ -286,10 +286,10 @@ function menu_add() {
 
         # Manual entry
         "manual bibfile" )
-            BIBFILE=~/.local/tmp/bibfile_tmp.bib
+            TMPBIBFILE=~/.local/tmp/bibfile_tmp.bib
             ${TERMINAL_EDIT} -t "Pubs edit" \
-                  -e "nvim ${BIBFILE}"
-            OUT=$($PUBS -c $lib_conf add ${BIBFILE} 2> ~/.local/tmp/tmp_pubs)
+                  -e "nvim ${TMPBIBFILE}"
+            OUT=$($PUBS -c $lib_conf add ${TMPBIBFILE} 2> ~/.local/tmp/tmp_pubs)
 
             ERROR=$(<~/.local/tmp/tmp_pubs)
 
@@ -299,6 +299,8 @@ function menu_add() {
             bibkey=$(echo "${OUT}" | awk -F "[][]" '{ print $2 }')
             # Add doc
             add_doc $bibkey $lib_conf
+
+            rm ${TMPBIBFILE}
 
             ;;
         "back")
