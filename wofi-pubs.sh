@@ -102,6 +102,8 @@ function menu_ref() {
 
     declare -a bibinfo=$(${PUBS} -c ${lib_conf} export ${bibkey} | ~/.local/bin/parse-bib-file --all)
 
+    declare -a tags=$(${PUBS} -c ${lib_conf} tag ${bibkey} | awk '{gsub(" ", "; "); print $0}')
+
     # Second menu
     declare -a entries=( \
         " Open" \
@@ -112,7 +114,8 @@ function menu_ref() {
         " Back" \
         " More actions" \
         "  " \
-        ${bibinfo[@]})
+        ${bibinfo[@]} \
+        " <tt><b>Tags:      </b></tt> ${tags}" )
 
     selected=$(printf '%s\n' "${entries[@]}" | \
         ${WOFI} -i \
