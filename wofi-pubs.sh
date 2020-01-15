@@ -125,11 +125,6 @@ function menu_ref() {
         --dmenu \
         --cache-file /dev/null)
 
-    # Exit script if no selection is made
-    if [[ ${selected} == "" ]]; then
-        exit 1
-    fi
-
     selected=$(echo ${selected} | awk \
         '{
         $1="";
@@ -139,6 +134,8 @@ function menu_ref() {
         }')
 
     case $selected in
+      '')
+          exit 1;;
       'export')
         ${PUBS} -c ${lib_conf} export ${bibkey} | wl-copy;;
       'open')
@@ -171,7 +168,7 @@ function menu_more_actions() {
     # Second menu
     declare -a entries=( \
         " Add document" \
-        " Add tag" \
+        " Add tag" \
         " Back" )
 
     selected=$(printf '%s\n' "${entries[@]}" | \
