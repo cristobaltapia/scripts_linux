@@ -304,6 +304,8 @@ function menu_add() {
             add_doc $bibkey $lib_conf
 
             ;;
+        "back")
+            main_fun ${lib_conf};;
 
         "*" )
     esac
