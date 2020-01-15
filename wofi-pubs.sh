@@ -148,10 +148,10 @@ function menu_ref() {
       '')
           exit 1;;
       'export')
-          ${PUBS} -c ${lib_conf} export ${bibkey} | wl-copy;;
+          ${PUBS} -c ${lib_conf} export ${bibkey} | wl-copy
+          menu_ref ${bibkey} ${lib_conf} ${entries};;
       'open')
           ${PUBS} -c ${lib_conf} doc open --with ${PDFVIEWER} ${bibkey}
-          menu_ref ${bibkey} ${lib_conf} ${entries}
           ;;
       'edit')
           ${TERMINAL_EDIT} -t "Pubs edit" \
