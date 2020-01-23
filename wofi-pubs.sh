@@ -159,7 +159,7 @@ function menu_ref() {
           menu_ref ${bibkey} ${lib_conf} ${entries}
           ;;
       'send to dpt-rp1')
-          send_to_dpt ${bibkey} ${lib_conf};;
+          menu_send_to_dpt ${bibkey} ${lib_conf};;
       'from same author(s)')
           menu_same_authors ${bibkey} ${lib_conf};;
       'more actions')
@@ -475,13 +475,33 @@ function add_tag() {
     menu_ref ${bibkey} ${lib_conf}
 }
 
+# Menu to select DPT device
+# $1 : cite-key
+# $2 : library
+function menu_send_to_dpt() {
+    local addr=$(cat ~/.dpapp/devices | \
+        ${WOFI} -i \
+        --width 600 \
+        --height 100 \
+        --prompt 'Select device...' \
+        --dmenu \
+        --cache-file /dev/null | awk \
+        ' { print $2 } '
+    )
+
+    send_to_dpt $1 $2 $addr
+
+}
+
 # Copy document to the DPT-RP1 (requires the python library
 # 'dptrp1'
 # $1 : cite-key
 # $2 : library
+# $3 : DPT-address
 function send_to_dpt() {
-    ${PUBS_TO_DPT} --library $2 send $1
+    ${PUBS_TO_DPT} --library $2 --addr $3 send $1
     notify_add "Document [$1] sent to DPT-RP1!" ""
+    menu_ref $1 $2
 }
 
 # Call the main function
