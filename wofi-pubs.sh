@@ -15,23 +15,23 @@ BIB_PARSE=~/.local/bin/parse-bib-file
 PUBS_TO_DPT=~/.local/bin/pubs_to_dptrp1
 
 function list_publications() {
-    echo " <b>Change library</b>"
-    echo " <b>Add publication</b>"
-    echo " <b>Search tags</b>"
-    echo " <b>Sync. repo</b>"
+    printf " <b>Change library</b>|"
+    printf " <b>Add publication</b>|"
+    printf " <b>Search tags</b>|"
+    printf " <b>Sync. repo</b>|"
     local lib_conf=$1
 	${PUBS} -c ${lib_conf} list | (awk \
         '{
             gsub(/&/, "&amp;");
             key=$1; $1="";
-            authors=gensub(/(^[^"]*)/, "<b>\\1</b>", 1, $0);
-            title=gensub(/(".+")/, "– <i>\\1</i>", 1, authors);
-            info=gensub(/([^>]+$)/, "", 1, title);
+            if (match($0, /(^[^"]*)/, m)); author=m[0];
+            if (match($0, /(".+")/, m)); title=m[0];
+            if (match($0, /(\([0-9]+\))/, m)); year=m[0];
             if (/\[pdf\]/){
-                printf "%-2s<tt><b>%-18s</b></tt>  %s\n", "", key, info
+                printf "%-2s <b>%s</b> %s <tt><b>%s</b></tt>\n      <i>%s</i>|", "", author, year, key, title
             }
             else
-                printf "%-2s<tt><b>%-18s</b></tt>  %s\n", "", key, info
+                printf "%-2s <b>%s</b> %s <tt><b>%s</b></tt>\n      <i>%s</i>|", "", author, year, key, title
         }')
 }
 
@@ -39,24 +39,24 @@ function list_publications() {
 # $1 : library
 # $2 : tag
 function list_pubs_tags() {
-    echo " <b>Change library</b>"
-    echo " <b>Add publication</b>"
-    echo " <b>Search tags</b>"
-    echo " <b>Sync. repo</b>"
+    printf " <b>Change library</b>|"
+    printf " <b>Add publication</b>|"
+    printf " <b>Search tags</b>|"
+    printf " <b>Sync. repo</b>|"
     local lib_conf=$1
     local tag=$2
 	${PUBS} -c ${lib_conf} list "tags:${tag}" | (awk \
         '{
             gsub(/&/, "&amp;");
             key=$1; $1="";
-            authors=gensub(/(^[^"]*)/, "<b>\\1</b>", 1, $0);
-            title=gensub(/(".+")/, "– <i>\\1</i>", 1, authors);
-            info=gensub(/([^>]+$)/, "", 1, title);
+            if (match($0, /(^[^"]*)/, m)); author=m[0];
+            if (match($0, /(".+")/, m)); title=m[0];
+            if (match($0, /(\([0-9]+\))/, m)); year=m[0];
             if (/\[pdf\]/){
-                printf "%-2s<tt><b>%-18s</b></tt>  %s\n", "", key, info
+                printf "%-2s <b>%s</b> %s <tt><b>%s</b></tt>\n      <i>%s</i>|", "", author, year, key, title
             }
             else
-                printf "%-2s<tt><b>%-18s</b></tt>  %s\n", "", key, info
+                printf "%-2s <b>%s</b> %s <tt><b>%s</b></tt>\n      <i>%s</i>|", "", author, year, key, title
         }')
 }
 
@@ -68,9 +68,10 @@ function main_fun() {
         --insensitive \
         --allow-markup \
         --width 1200 \
-        --height 450 \
+        --height 550 \
         --prompt="${prompt}" \
         --dmenu \
+        --define dmenu-separator='|' \
         --cache-file /dev/null | sed -e 's/<[^>]*>//g')
 
     # Exit script if no selection is made
@@ -84,8 +85,8 @@ function main_fun() {
         " Search tags" )
             menu_search_tags ${lib_conf};;
         * )
-            bibkey=$(echo ${SELECTION} | awk \
-                '{sub(/\[/, " "); sub(/\]/, " "); printf $2}')
+            # Extract citation key
+            bibkey=$(echo ${SELECTION} | sed 's/.*\[\([^]]*\)\].*/\1/g')
             # Store bibkey of the selected reference
             menu_ref ${bibkey} ${lib_conf};;
     esac
@@ -371,6 +372,7 @@ function menu_search_tags() {
         --width 1200 \
         --height 450 \
         --prompt="${prompt}" \
+        --define dmenu-separator='|' \
         --dmenu \
         --cache-file /dev/null | sed -e 's/<[^>]*>//g')
 
