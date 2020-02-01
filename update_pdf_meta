@@ -73,6 +73,7 @@ class Document(object):
 
 
 def short_authors(bibdata):
+    print(bibdata["author"])
     try:
         authors = [p for p in bibdata["author"]]
         if len(authors) < 3:
