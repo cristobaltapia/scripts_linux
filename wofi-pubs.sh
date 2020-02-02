@@ -131,27 +131,28 @@ function menu_ref() {
         declare -a tags=$(${PUBS} -c ${lib_conf} tag ${bibkey} | awk '{gsub(" ", "; "); print $0}')
         # Second menu
         declare -a entries=( \
-            " <b>Open</b>" \
-            " <b>Export</b>" \
-            " <b>Send to DPT-RP1</b>" \
-            " <b>From same author(s)</b>" \
-            " <b>Edit</b>" \
-            " <b>Back</b>" \
-            " <b>More actions</b>" \
-            "  " \
-            ${bibinfo[@]} \
+            " <b>Open</b>|" \
+            " <b>Export</b>|" \
+            " <b>Send to DPT-RP1</b>|" \
+            " <b>From same author(s)</b>|" \
+            " <b>Edit</b>|" \
+            " <b>Back</b>|" \
+            " <b>More actions</b>|" \
+            " |" \
+            "${bibinfo}" \
             " <tt><b>Tags:      </b></tt> ${tags}" )
     else
         entries=$3
     fi
 
 
-    selected=$(printf '%s\n' "${entries[@]}" | \
+    selected=$(printf '%s' "${entries[@]}" | \
         ${WOFI} -i \
         --width 800 \
         --height 330 \
         --prompt 'Action...' \
         --dmenu \
+        --define dmenu-separator='|' \
         --cache-file /dev/null | sed -e 's/<[^>]*>//g')
 
     selected=$(echo ${selected} | awk \

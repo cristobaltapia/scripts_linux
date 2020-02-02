@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 import argparse
 import sys
+import textwrap
 
 import bibtexparser
 from bibtexparser.bparser import BibTexParser
 
+WRAP_WIDTH = 82
 
 def print_authors(au: str):
     authors = au.split("and")
@@ -28,16 +30,16 @@ def print_all(year, author, title, sub):
     ye = "Year:"
     if sub is None:
         print(
-            f" <tt><b>{au:<11}</b></tt> {author}\n"
-            + f" <tt><b>{ti:<11}</b></tt> {title}\n"
-            + f" <tt><b>{ye:<11}</b></tt> {year}"
+            f" <tt><b>{au:<11}</b></tt> {author}|"
+            + f" <tt><b>{ti:<11}</b></tt> {title}|"
+            + f" <tt><b>{ye:<11}</b></tt> {year}|"
         )
     else:
         print(
-            f" <tt><b>{au:<11}</b></tt> {author}\n"
-            + f" <tt><b>{ti:<11}</b></tt> {title}\n"
-            + f" <tt><b>{su:<11}</b></tt> {sub}\n"
-            + f" <tt><b>{ye:<11}</b></tt> {year}"
+            f" <tt><b>{au:<11}</b></tt> {author}|"
+            + f" <tt><b>{ti:<11}</b></tt> {title}|"
+            + f" <tt><b>{su:<11}</b></tt> {sub}|"
+            + f" <tt><b>{ye:<11}</b></tt> {year}|"
         )
 
 
@@ -85,7 +87,12 @@ if __name__ == "__main__":
 
     title = bib_db["title"]
     year = bib_db["year"]
-    # Check whether ther is a subtitle
+
+    # Wrap title
+    title_wrap = textwrap.wrap(title, width=WRAP_WIDTH)
+    title = "\n<tt>              </tt>".join(title_wrap)
+
+    # Check whether there is a subtitle
     if "subtitle" in bib_db:
         sub = bib_db["subtitle"]
     else:
