@@ -58,9 +58,8 @@ function list_publications() {
 # $2 : tag
 function list_pubs_tags() {
     printf " <b>Change library</b>|"
-    printf " <b>Add publication</b>|"
     printf " <b>Search tags</b>|"
-    printf " <b>Sync. repo</b>|"
+    printf " <b>Back</b>|"
     local lib_conf=$1
     local tag=$2
 	${PUBS} -c ${lib_conf} list "tags:${tag}" | (awk \
@@ -132,13 +131,13 @@ function menu_ref() {
         declare -a tags=$(${PUBS} -c ${lib_conf} tag ${bibkey} | awk '{gsub(" ", "; "); print $0}')
         # Second menu
         declare -a entries=( \
-            " Open" \
-            " Export" \
-            " Send to DPT-RP1" \
-            " From same author(s)" \
-            " Edit" \
-            " Back" \
-            " More actions" \
+            " <b>Open</b>" \
+            " <b>Export</b>" \
+            " <b>Send to DPT-RP1</b>" \
+            " <b>From same author(s)</b>" \
+            " <b>Edit</b>" \
+            " <b>Back</b>" \
+            " <b>More actions</b>" \
             "  " \
             ${bibinfo[@]} \
             " <tt><b>Tags:      </b></tt> ${tags}" )
@@ -153,7 +152,7 @@ function menu_ref() {
         --height 330 \
         --prompt 'Action...' \
         --dmenu \
-        --cache-file /dev/null)
+        --cache-file /dev/null | sed -e 's/<[^>]*>//g')
 
     selected=$(echo ${selected} | awk \
         '{
@@ -203,6 +202,7 @@ function menu_more_actions() {
     declare -a entries=( \
         " Add document" \
         " Add tag" \
+        " Send E-mail" \
         " Back" )
 
     selected=$(printf '%s\n' "${entries[@]}" | \
@@ -226,6 +226,8 @@ function menu_more_actions() {
           add_doc ${bibkey} ${lib_conf};;
       'add tag')
           add_tag ${bibkey} ${lib_conf};;
+      'Send E-mail')
+          send_mail ${bibkey} ${lib_conf};;
       'back')
           menu_ref ${bibkey} ${lib_conf};;
     esac
@@ -398,12 +400,12 @@ function menu_search_tags() {
     case ${SELECTION} in
         "" )
             exit 1;;
-        " Add publication" )
-            menu_add ${lib_conf};;
         " Change library" )
             menu_change_lib;;
         " Search tags" )
             menu_search_tags ${lib_conf};;
+        " Back" )
+            main_fun ${lib_conf};;
         * )
             bibkey=$(echo ${SELECTION} | awk \
                 '{sub(/\[/, " "); sub(/\]/, " "); printf $2}')
@@ -522,6 +524,13 @@ function send_to_dpt() {
     ${PUBS_TO_DPT} --library $2 --addr $3 send $1
     notify_add "Document [$1] sent to DPT-RP1!" ""
     menu_ref $1 $2
+}
+
+# Send reference and document per E-mail
+# $1 : cite-key
+# $2 : library
+function send_mail() {
+    ~/.local/bin/pubs-utils --library $2 mail $1
 }
 
 # Call the main function
