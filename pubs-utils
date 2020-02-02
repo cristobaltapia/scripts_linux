@@ -73,14 +73,30 @@ class Document(object):
         exporter = endecoder.EnDecoder()
         content = exporter.encode_bibdata(bib_file, [])
 
-        body_string = content.replace(" ", "%20")
-        body_string = content.replace("&", "%26")
+        # List of reserved characters in RFC 2396
+        reserved = {
+                " ": "%20",
+                "&": "%26",
+                ";": "%3B",
+                "@": "%40",
+                "/": "%2F",
+                "?": "%3F",
+                ":": "%3A",
+                "=": "%3D",
+                "+": "%2B",
+                "$": "%24",
+                ",": "%2C",
+                }
+
+        for k, v in reserved.items():
+            content = content.replace(k, v)
+
         subprocess.run(
             [
                 "evolution",
                 (
                     f"mailto:?subject=Reference for {key}&body="
-                    + body_string
+                    + content
                     + "&attach="
                     + local_path
                 ),

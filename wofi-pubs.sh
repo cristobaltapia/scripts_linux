@@ -226,7 +226,7 @@ function menu_more_actions() {
           add_doc ${bibkey} ${lib_conf};;
       'add tag')
           add_tag ${bibkey} ${lib_conf};;
-      'Send E-mail')
+      'send e-mail')
           send_mail ${bibkey} ${lib_conf};;
       'back')
           menu_ref ${bibkey} ${lib_conf};;
