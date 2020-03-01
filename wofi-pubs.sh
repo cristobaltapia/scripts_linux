@@ -20,17 +20,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-PDFVIEWER=zathura
-WOFI=wofi
-PUBS=pubs
-CONFIGS_DIR=~/.config/pubs
-DEFAULT_LIB=~/.config/pubs/main_library.conf
-CACHE=~/.local/tmp/pubs_wofi
-CACHE_AUTH=~/.local/tmp/pubs_wofi_auth
-CACHE_LIBS=~/.local/tmp/pubs_wofi_libs
-TERMINAL_EDIT=termite
-BIB_PARSE=~/.local/bin/parse-bib-file
-PUBS_TO_DPT=~/.local/bin/pubs_to_dptrp1
+source ${HOME}/.config/wofi-pubs/config
 
 function list_publications() {
     printf " <b>Change library</b>|"
