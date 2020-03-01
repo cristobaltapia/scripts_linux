@@ -31,14 +31,14 @@ def print_all(year, author, title, sub):
     if sub is None:
         print(
             f" <tt><b>{au:<11}</b></tt> {author}|"
-            + f" <tt><b>{ti:<11}</b></tt> {title}|"
+            + f" <tt><b>{ti:<11}</b></tt>  {title}|"
             + f" <tt><b>{ye:<11}</b></tt> {year}|"
         )
     else:
         print(
             f" <tt><b>{au:<11}</b></tt> {author}|"
-            + f" <tt><b>{ti:<11}</b></tt> {title}|"
-            + f" <tt><b>{su:<11}</b></tt> {sub}|"
+            + f" <tt><b>{ti:<11}</b></tt>  {title}|"
+            + f" <tt><b>{su:<11}</b></tt>  {sub}|"
             + f" <tt><b>{ye:<11}</b></tt> {year}|"
         )
 
@@ -83,7 +83,10 @@ if __name__ == "__main__":
     if bib_type in ["misc", "standard"]:
         author = bib_db["organization"]
     else:
-        author = bib_db["author"]
+        if "author" in bib_db:
+            author = bib_db["author"]
+        else:
+            author = bib_db["editor"]
 
     title = bib_db["title"]
     year = bib_db["year"]
