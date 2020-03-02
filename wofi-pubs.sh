@@ -163,7 +163,7 @@ function menu_ref() {
           ${PUBS} -c ${lib_conf} doc open --with ${PDFVIEWER} ${bibkey}
           ;;
       'edit')
-          ${TERMINAL_EDIT} -t "Pubs edit" \
+          ${TERMINAL_EDIT} ${TERMINAL_ARGS} "Pubs edit" \
                 -e "${PUBS} -c ${lib_conf} edit ${bibkey}"
           menu_ref ${bibkey} ${lib_conf} ${entries}
           ;;
@@ -314,7 +314,7 @@ function menu_add() {
         # Manual entry
         "manual bibfile" )
             TMPBIBFILE=~/.local/tmp/bibfile_tmp.bib
-            ${TERMINAL_EDIT} -t "Pubs edit" \
+            ${TERMINAL_EDIT} ${TERMINAL_ARGS} "Pubs edit" \
                   -e "nvim ${TMPBIBFILE}"
             OUT=$($PUBS -c $lib_conf add ${TMPBIBFILE} 2> ~/.local/tmp/tmp_pubs)
 
